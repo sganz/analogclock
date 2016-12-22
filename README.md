@@ -1,6 +1,7 @@
 # analogclock
 Javascript Analog Clock with lots of nice looking features. This draws on the canvas element and is CSS free.
 
+Live Demo Here : [http://gtsparkplugs.com/JSClock.html](http://gtsparkplugs.com/JSClock.html)
 This was a project I started a while back. Saw a nice simple HTML5 Analog Clock and decided to make it nicer.
 This uses NO CSS, draws on the HTML5 Canvas element and support a bunch of options.
 
