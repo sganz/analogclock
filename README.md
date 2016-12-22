@@ -13,3 +13,5 @@ Some open issues are general code clean/refactor. Options and presets are clunky
 Enjoy and please follow my licensing to the letter (see source).
 
 If you have and ideas or fixes send me a message, happy to fix and enhance.
+
+![alt text](http://gtsparkplugs.com/images/Analog-Clock-Javascript.gif "Javascript Analog Clock")
