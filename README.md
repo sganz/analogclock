@@ -16,3 +16,5 @@ Enjoy and please follow my licensing to the letter (see source).
 If you have and ideas or fixes send me a message, happy to fix and enhance.
 
 ![alt text](http://gtsparkplugs.com/images/Analog-Clock-Javascript.gif "Javascript Analog Clock")
+
+[![WTFPL](https://img.shields.io/badge/License-WTFPL-orange.svg)](http://www.wtfpl.net)
