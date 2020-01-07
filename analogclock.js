@@ -222,13 +222,63 @@ function myclock(id) {
     textOpts.text2 = 'Chronometer';
     textOpts.text2Font = 'bold italic 20px Georgia';
     clk.redraw();    // force update of background on next tick event
+    return clk;
 }
 
 function myclock1(id) {
     var clk = new Clock(id);
+    return clk;
 }
 
-function Clock(id) {
+/*var schedule = {
+    start,
+    end,
+    free,
+    subject
+}*/
+
+function myclock2(id,schedule) {
+    
+    var ns = []; // schedule with free times
+    var s = schedule[0];
+    startHr = s.start.substring(0,2);
+    startMn = s.start.substring(3,5);
+    if ((startHr > 7 ) ||
+        ((startHr = 7 ) && (startMn > 0 ))) {
+        ns.push({start:"07:00",end:s.start,free:true});
+    }
+    var prevEndHr, prevEndMn;
+    schedule.forEach(s => {
+        startHr = s.start.substring(0,2);
+        startMn = s.start.substring(3,5);
+        endHr = s.end.substring(0,2);
+        endMn = s.end.substring(3,5);
+        if ((prevEndHr) && ((prevEndHr != startHr) || (prevEndMn != startMn))) {
+            ns.push({start:prevEndHr+":"+prevEndMn,end:startHr+":"+startMn,free:true});
+        }
+        ns.push({start:startHr+":"+startMn,end:endHr+":"+endMn,subject:s.subject});
+        if (schedule.indexOf(s) == schedule.length - 1) {
+            ns.push({start:endHr+":"+endMn,end:"07:00",free:true});
+        }
+        prevEndHr = endHr;
+        prevEndMn = endMn;
+    });
+    var clk = new Clock(id,ns); // if schedule is used then free times are not marked
+    var bezOpts = clk.getBezelOpts();
+    var clkOpts = clk.getClockOpts();
+    var textOpts = clk.getTextOpts();
+    var tickOpts = clk.getTickOpts();
+    bezOpts.bezel5Draw = true;
+    textOpts.text2 = "";
+    textOpts.text1 = "";
+    tickOpts.innerTick = false;
+    tickOpts.innerTickHead = false;
+    tickOpts.pie = false;
+
+    clk.redraw();
+}
+
+function Clock(id,schedule) {
 
     var bezelOpts = {
     
@@ -260,6 +310,11 @@ function Clock(id) {
         bezel4StopColor: '#ff0000',
         bezel4Diameter: 224,
     
+        // shaded bezel
+        bezel5Draw: false,
+        bezel5FreeColor: '#00ff00',
+        bezel5BusyColor: '#ff0000',
+        bezel5Diameter: 230,
     };
     
     // general clock face options
@@ -457,8 +512,16 @@ function Clock(id) {
         return clockOpts;
     }
 
+    this.getBezelOpts = function() {
+        return bezelOpts;
+    }
+
     this.getTextOpts = function() {
         return textOpts;
+    }
+    
+    this.getTickOpts = function() {
+        return tickOpts;
     }
     
     // called to update clock time from timeout/interval
@@ -595,6 +658,34 @@ function Clock(id) {
             back_ctx.fillStyle = g;
             back_ctx.fill();
             back_ctx.closePath();
+        }
+
+        if (opts.bezel5Draw && schedule) {
+            // schedule ring
+
+            var arcstart, arcend;
+            schedule.forEach(s => {
+                back_ctx.beginPath();
+
+                if (s.start.substring(0,2) < 15 ) {
+                    arcstart = 2 * Math.PI - ( 15 - s.start.substring(0,2) ) * Math.PI / 6 + s.start.substring(3,5) * Math.PI / 360;
+                }
+                else{
+                    arcstart = ( s.start.substring(0,2) - 15 ) * Math.PI / 6 + s.start.substring(3,5) * Math.PI / 360;
+                }
+                if (s.end.substring(0,2) < 15) {
+                    arcend = 2 * Math.PI - ( 15 - s.end.substring(0,2) ) * Math.PI / 6 + s.end.substring(3,5) * Math.PI / 360;
+                }
+                else{
+                    arcend = ( s.end.substring(0,2) - 15 ) * Math.PI / 6 + s.end.substring(3,5) * Math.PI / 360;
+                }
+                back_ctx.arc(250, 250, opts.bezel5Diameter, arcstart, arcend); //2*pi
+        
+                back_ctx.strokeStyle = s.free?opts.bezel5FreeColor:opts.bezel5BusyColor;
+                back_ctx.lineWidth = 10;
+                back_ctx.stroke();
+                back_ctx.closePath();
+            });
         }
     }
 

@@ -11,7 +11,7 @@
 <!-- Making it soft first, then create a clock object and related part -->
 <!-- (C) Sandy Ganz 2014-2015 sganz@pacbell.net -->
 
-<body onLoad="myclock('analog-clock');myclock1('analog-clock1');">
+<body onLoad="runOnLoad();">
 	<h1>Javascript Analog Clock Hack by Sandy Ganz</h1>
     <canvas id="analog-clock"></canvas>
     <canvas id="analog-clock1"></canvas>
@@ -24,7 +24,16 @@
 	<a href="http://jsfiddle.net/sganz/t20qv4rt/">jsFiddle Link</a><br />
 	<a href="https://github.com/sganz/analogclock.git">GitHub Javascript Repo (More Current then jsFiddle)</a>
 	</p>
-
+    <script type="text/javascript">
+        function runOnLoad()
+        {
+            var a1 = myclock1('analog-clock');
+            var a2 = myclock2('analog-clock1',
+                [{start:"08:00",end:"09:00",subject:"test1"},
+                 {start:"11:00",end:"12:30",subject:"test2"},
+                 {start:"14:00",end:"16:30",subject:"test3"}]);
+        }
+    </script>
 </body>
 
 </html>
