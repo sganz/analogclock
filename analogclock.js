@@ -237,7 +237,7 @@ function myclock1(id) {
     subject
 }*/
 
-function myclock2(id,schedule) {
+function myclock2(id,schedule, opts) {
     
     var ns = []; // schedule with free times
     var s = schedule[0];
@@ -263,7 +263,13 @@ function myclock2(id,schedule) {
         prevEndHr = endHr;
         prevEndMn = endMn;
     });
-    var clk = new Clock(id,ns); // if schedule is used then free times are not marked
+
+    if (opts["nofree"]) {
+        var clk = new Clock(id,schedule); // if schedule is used then free times are not marked
+    }
+    else {
+        var clk = new Clock(id,ns); // if schedule is used then free times are not marked
+    }
     var bezOpts = clk.getBezelOpts();
     var clkOpts = clk.getClockOpts();
     var textOpts = clk.getTextOpts();
