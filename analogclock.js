@@ -222,13 +222,69 @@ function myclock(id) {
     textOpts.text2 = 'Chronometer';
     textOpts.text2Font = 'bold italic 20px Georgia';
     clk.redraw();    // force update of background on next tick event
+    return clk;
 }
 
 function myclock1(id) {
     var clk = new Clock(id);
+    return clk;
 }
 
-function Clock(id) {
+/*var schedule = {
+    start,
+    end,
+    free,
+    subject
+}*/
+
+function myclock2(id,schedule, opts) {
+    
+    var ns = []; // schedule with free times
+    var s = schedule[0];
+    startHr = s.start.substring(0,2);
+    startMn = s.start.substring(3,5);
+    if ((startHr > 7 ) ||
+        ((startHr = 7 ) && (startMn > 0 ))) {
+        ns.push({start:"07:00",end:s.start,free:true});
+    }
+    var prevEndHr, prevEndMn;
+    schedule.forEach(s => {
+        startHr = s.start.substring(0,2);
+        startMn = s.start.substring(3,5);
+        endHr = s.end.substring(0,2);
+        endMn = s.end.substring(3,5);
+        if ((prevEndHr) && ((prevEndHr != startHr) || (prevEndMn != startMn))) {
+            ns.push({start:prevEndHr+":"+prevEndMn,end:startHr+":"+startMn,free:true});
+        }
+        ns.push({start:startHr+":"+startMn,end:endHr+":"+endMn,subject:s.subject});
+        if (schedule.indexOf(s) == schedule.length - 1) {
+            ns.push({start:endHr+":"+endMn,end:"07:00",free:true});
+        }
+        prevEndHr = endHr;
+        prevEndMn = endMn;
+    });
+
+    if (opts["nofree"]) {
+        var clk = new Clock(id,schedule); // if schedule is used then free times are not marked
+    }
+    else {
+        var clk = new Clock(id,ns); // if schedule is used then free times are not marked
+    }
+    var bezOpts = clk.getBezelOpts();
+    var clkOpts = clk.getClockOpts();
+    var textOpts = clk.getTextOpts();
+    var tickOpts = clk.getTickOpts();
+    bezOpts.bezel5Draw = true;
+    textOpts.text2 = "";
+    textOpts.text1 = "";
+    tickOpts.innerTick = false;
+    tickOpts.innerTickHead = false;
+    tickOpts.pie = false;
+
+    clk.redraw();
+}
+
+function Clock(id,schedule) {
 
     var bezelOpts = {
     
@@ -260,6 +316,11 @@ function Clock(id) {
         bezel4StopColor: '#ff0000',
         bezel4Diameter: 224,
     
+        // shaded bezel
+        bezel5Draw: false,
+        bezel5FreeColor: '#00ff00',
+        bezel5BusyColor: '#ff0000',
+        bezel5Diameter: 230,
     };
     
     // general clock face options
@@ -436,7 +497,7 @@ function Clock(id) {
     var back_ctx = back_canvas.getContext('2d');    
     back_canvas.width = 500;
     back_canvas.height = 500;    
-    
+
     // start and stop functions, must call start() to get clock ticking
     this.start = function() {
         interval_id = setInterval(function() {self.ticker()}, interval);
@@ -457,8 +518,16 @@ function Clock(id) {
         return clockOpts;
     }
 
+    this.getBezelOpts = function() {
+        return bezelOpts;
+    }
+
     this.getTextOpts = function() {
         return textOpts;
+    }
+    
+    this.getTickOpts = function() {
+        return tickOpts;
     }
     
     // called to update clock time from timeout/interval
@@ -487,9 +556,17 @@ function Clock(id) {
 
         ctx.clearRect(0, 0, 500, 500);        // always clear entire space
         ctx.drawImage(back_canvas, 0, 0);     // draw pre drawn background to top   
-        
+
         // refresh background on hour change, will catch day change too for calendar
         if(ds.getHours() != d.getHours() || refresh)
+        {
+            ds = d;
+            this.drawBackground();                  // refresh the background to catch changes
+            ctx.drawImage(back_canvas, 0, 0);        // draw background again
+            refresh = false;
+        }
+
+        if(ds.getMinutes() != d.getMinutes() || refresh)
         {
             ds = d;
             this.drawBackground();                  // refresh the background to catch changes
@@ -595,6 +672,79 @@ function Clock(id) {
             back_ctx.fillStyle = g;
             back_ctx.fill();
             back_ctx.closePath();
+        }
+
+        if (opts.bezel5Draw && schedule) {
+            // schedule ring
+
+            var arcstart, arcend;
+            schedule.forEach(s => {
+                
+                startHr = s.start.substring(0,2);
+                startMn = s.start.substring(3,5);
+                endHr = s.end.substring(0,2);
+                endMn = s.end.substring(3,5);
+
+                currTime = d.getHours()*60+d.getMinutes();
+                startTime = startHr*60+parseInt(startMn);
+                endTime = endHr*60+parseInt(endMn)
+
+                back_ctx.beginPath();
+
+                if (startHr < 15 ) {
+                    arcstart = 2 * Math.PI - ( 15 - startHr ) * Math.PI / 6 + startMn * Math.PI / 360;
+                }
+                else{
+                    arcstart = ( startHr - 15 ) * Math.PI / 6 + startMn * Math.PI / 360;
+                }
+                if (endHr < 15) {
+                    arcend = 2 * Math.PI - ( 15 - endHr ) * Math.PI / 6 + endMn * Math.PI / 360;
+                }
+                else{
+                    arcend = ( endHr - 15 ) * Math.PI / 6 + endMn * Math.PI / 360;
+                }
+                back_ctx.arc(250, 250, bezelOpts.bezel5Diameter, arcstart, arcend); //2*pi
+        
+                back_ctx.strokeStyle = s.free?bezelOpts.bezel5FreeColor:bezelOpts.bezel5BusyColor;
+                back_ctx.lineWidth = 10;
+                back_ctx.stroke();
+                back_ctx.closePath();
+
+                if ((currTime >= startTime) && (typeof(s.free) == "undefined")) {
+
+                    back_ctx.beginPath();
+                    if (startHr < 15 ) {
+                        arcstart = 2 * Math.PI - ( 15 - startHr ) * Math.PI / 6 + startMn * Math.PI / 360;
+                    }
+                    else{
+                        arcstart = ( startHr - 15 ) * Math.PI / 6 + startMn * Math.PI / 360;
+                    }
+                    if (currTime <= endTime) {
+                        if (d.getHours() < 15) {
+                            arcend = 2 * Math.PI - ( 15 - d.getHours() ) * Math.PI / 6 + d.getMinutes() * Math.PI / 360;
+                        }
+                        else{
+                            arcend = ( d.getHours() - 15 ) * Math.PI / 6 + d.getMinutes() * Math.PI / 360;
+                        }
+                    }
+                    else {
+                        if (endHr < 15) {
+                            arcend = 2 * Math.PI - ( 15 - endHr ) * Math.PI / 6 + endMn * Math.PI / 360;
+                        }
+                        else{
+                            arcend = ( endHr - 15 ) * Math.PI / 6 + endMn * Math.PI / 360;
+                        }
+                    }
+                    back_ctx.arc(250, 250, bezelOpts.bezel5Diameter, arcstart, arcend); //2*pi
+            
+                    back_ctx.strokeStyle = "grey";
+                    back_ctx.lineWidth = 10;
+                    back_ctx.stroke();
+                    back_ctx.closePath();
+                }
+
+
+            });
         }
     }
 
