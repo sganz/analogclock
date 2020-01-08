@@ -497,7 +497,7 @@ function Clock(id,schedule) {
     var back_ctx = back_canvas.getContext('2d');    
     back_canvas.width = 500;
     back_canvas.height = 500;    
-    
+
     // start and stop functions, must call start() to get clock ticking
     this.start = function() {
         interval_id = setInterval(function() {self.ticker()}, interval);
@@ -556,9 +556,17 @@ function Clock(id,schedule) {
 
         ctx.clearRect(0, 0, 500, 500);        // always clear entire space
         ctx.drawImage(back_canvas, 0, 0);     // draw pre drawn background to top   
-        
+
         // refresh background on hour change, will catch day change too for calendar
         if(ds.getHours() != d.getHours() || refresh)
+        {
+            ds = d;
+            this.drawBackground();                  // refresh the background to catch changes
+            ctx.drawImage(back_canvas, 0, 0);        // draw background again
+            refresh = false;
+        }
+
+        if(ds.getMinutes() != d.getMinutes() || refresh)
         {
             ds = d;
             this.drawBackground();                  // refresh the background to catch changes
@@ -671,26 +679,71 @@ function Clock(id,schedule) {
 
             var arcstart, arcend;
             schedule.forEach(s => {
+                
+                startHr = s.start.substring(0,2);
+                startMn = s.start.substring(3,5);
+                endHr = s.end.substring(0,2);
+                endMn = s.end.substring(3,5);
+
+                currTime = d.getHours()*60+d.getMinutes();
+                startTime = startHr*60+parseInt(startMn);
+                endTime = endHr*60+parseInt(endMn)
+
                 back_ctx.beginPath();
 
-                if (s.start.substring(0,2) < 15 ) {
-                    arcstart = 2 * Math.PI - ( 15 - s.start.substring(0,2) ) * Math.PI / 6 + s.start.substring(3,5) * Math.PI / 360;
+                if (startHr < 15 ) {
+                    arcstart = 2 * Math.PI - ( 15 - startHr ) * Math.PI / 6 + startMn * Math.PI / 360;
                 }
                 else{
-                    arcstart = ( s.start.substring(0,2) - 15 ) * Math.PI / 6 + s.start.substring(3,5) * Math.PI / 360;
+                    arcstart = ( startHr - 15 ) * Math.PI / 6 + startMn * Math.PI / 360;
                 }
-                if (s.end.substring(0,2) < 15) {
-                    arcend = 2 * Math.PI - ( 15 - s.end.substring(0,2) ) * Math.PI / 6 + s.end.substring(3,5) * Math.PI / 360;
+                if (endHr < 15) {
+                    arcend = 2 * Math.PI - ( 15 - endHr ) * Math.PI / 6 + endMn * Math.PI / 360;
                 }
                 else{
-                    arcend = ( s.end.substring(0,2) - 15 ) * Math.PI / 6 + s.end.substring(3,5) * Math.PI / 360;
+                    arcend = ( endHr - 15 ) * Math.PI / 6 + endMn * Math.PI / 360;
                 }
-                back_ctx.arc(250, 250, opts.bezel5Diameter, arcstart, arcend); //2*pi
+                back_ctx.arc(250, 250, bezelOpts.bezel5Diameter, arcstart, arcend); //2*pi
         
-                back_ctx.strokeStyle = s.free?opts.bezel5FreeColor:opts.bezel5BusyColor;
+                back_ctx.strokeStyle = s.free?bezelOpts.bezel5FreeColor:bezelOpts.bezel5BusyColor;
                 back_ctx.lineWidth = 10;
                 back_ctx.stroke();
                 back_ctx.closePath();
+
+                if ((currTime >= startTime) && (typeof(s.free) == "undefined")) {
+
+                    back_ctx.beginPath();
+                    if (startHr < 15 ) {
+                        arcstart = 2 * Math.PI - ( 15 - startHr ) * Math.PI / 6 + startMn * Math.PI / 360;
+                    }
+                    else{
+                        arcstart = ( startHr - 15 ) * Math.PI / 6 + startMn * Math.PI / 360;
+                    }
+                    if (currTime <= endTime) {
+                        if (d.getHours() < 15) {
+                            arcend = 2 * Math.PI - ( 15 - d.getHours() ) * Math.PI / 6 + d.getMinutes() * Math.PI / 360;
+                        }
+                        else{
+                            arcend = ( d.getHours() - 15 ) * Math.PI / 6 + d.getMinutes() * Math.PI / 360;
+                        }
+                    }
+                    else {
+                        if (endHr < 15) {
+                            arcend = 2 * Math.PI - ( 15 - endHr ) * Math.PI / 6 + endMn * Math.PI / 360;
+                        }
+                        else{
+                            arcend = ( endHr - 15 ) * Math.PI / 6 + endMn * Math.PI / 360;
+                        }
+                    }
+                    back_ctx.arc(250, 250, bezelOpts.bezel5Diameter, arcstart, arcend); //2*pi
+            
+                    back_ctx.strokeStyle = "grey";
+                    back_ctx.lineWidth = 10;
+                    back_ctx.stroke();
+                    back_ctx.closePath();
+                }
+
+
             });
         }
     }
